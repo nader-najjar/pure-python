@@ -1,0 +1,8 @@
+[flake8]
+select = E, F, W, C90, C819, N
+ignore = E501, W503
+indent-size = 4
+max-complexity = 8
+jobs = 1
+require-plugins = flake8-commas, pep8-naming
+exclude = .git, __pycache__, .venv, bazel-*

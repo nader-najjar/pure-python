@@ -1,0 +1,41 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+package(default_visibility = ["//visibility:private"])
+
+exports_files([".python-version"])
+
+compile_pip_requirements(
+    name = "requirements",
+    srcs = ["requirements.in"],
+    requirements_txt = "requirements_lock.txt",
+    generate_hashes = True,
+    extra_args = ["--no-strip-extras", "--pip-args=--only-binary=:all:"],
+    python_version = "3.13.9"
+)
+
+py_library(
+    name = "app",
+    srcs = glob(["src/**/*.py"], allow_empty = True),
+    imports = ["src"],
+    deps = ["@python_dependencies//pydantic"]
+)
+
+filegroup(
+    name = "python_sources",
+    srcs = glob(["src/**/*.py", "test/**/*.py", "tools/**/*.py"], allow_empty = True)
+)
+
+py_test(
+    name = "lint",
+    srcs = ["tools/run_tool.py"],
+    main = "tools/run_tool.py",
+    args = ["flake8", "--config=.flake8", "src", "test", "tools"],
+    data = [":python_sources", ".flake8", "src/.gitkeep", "test/.gitkeep"],
+    deps = [
+        "@python_dependencies//flake8",
+        "@python_dependencies//flake8_commas",
+        "@python_dependencies//pep8_naming"
+    ],
+    size = "small"
+)

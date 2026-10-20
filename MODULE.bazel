@@ -1,0 +1,22 @@
+module(name = "pure_python", version = "1.0.0")
+
+bazel_dep(name = "rules_python", version = "2.4.2")
+bazel_dep(name = "rules_pyrefly", version = "0.1.0")
+bazel_dep(name = "platforms", version = "1.0.0")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.defaults(python_version_file = "//:.python-version")
+python.toolchain(python_version = "3.13.9", configure_coverage_tool = True)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "python_dependencies",
+    python_version = "3.13.9",
+    requirements_lock = "//:requirements_lock.txt"
+)
+use_repo(pip, "python_dependencies")
+
+pyrefly = use_extension("@rules_pyrefly//pyrefly:extensions.bzl", "pyrefly")
+pyrefly.toolchain(version = "1.2.0")
+use_repo(pyrefly, "pyrefly_toolchains")
+register_toolchains("@pyrefly_toolchains//:all")

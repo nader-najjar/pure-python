@@ -1,0 +1,9 @@
+[tool.pyrefly]
+project-includes = ["**/*.py"]
+project-excludes = ["bazel-*/**", "**/__pycache__/**"]
+python-version = "3.13"
+preset = "strict"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+addopts = "--strict-config --strict-markers"
