@@ -1,0 +1,99 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements", "whl_filegroup")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("@rules_oci//oci:defs.bzl", "oci_image")
+
+package(default_visibility = ["//visibility:private"])
+
+exports_files([".python-version"])
+
+compile_pip_requirements(
+    name = "requirements",
+    srcs = ["requirements.in"],
+    requirements_txt = "requirements_lock.txt",
+    generate_hashes = True,
+    extra_args = ["--no-strip-extras", "--pip-args=--only-binary=:all:"],
+    tags = ["manual", "no-pyrefly"]
+)
+
+py_library(
+    name = "app",
+    srcs = glob(["src/**/*.py"], exclude = ["src/main.py"]),
+    imports = ["src"],
+    deps = ["@python_dependencies//pydantic"]
+)
+
+py_library(
+    name = "entrypoint",
+    srcs = ["src/main.py"],
+    imports = ["src"],
+    deps = [":app", "@python_dependencies//pydantic"]
+)
+
+py_binary(
+    name = "app_bin",
+    main_module = "main",
+    deps = [":entrypoint"]
+)
+
+py_test(
+    name = "all_tests",
+    srcs = glob(["test/**/*.py"]),
+    main_module = "pytest",
+    args = ["test"],
+    data = ["pyproject.toml"],
+    deps = [":app", ":entrypoint", "@python_dependencies//pydantic", "@python_dependencies//pytest"],
+    size = "small"
+)
+
+py_test(
+    name = "lint",
+    main_module = "flake8",
+    args = ["--config=.flake8", "src", "test"],
+    data = glob(["src/**/*.py", "test/**/*.py"]) + [".flake8"],
+    deps = [
+        "@python_dependencies//flake8",
+        "@python_dependencies//flake8_commas",
+        "@python_dependencies//pep8_naming"
+    ],
+    size = "small"
+)
+
+pkg_tar(
+    name = "app_archive",
+    srcs = [":app_bin"],
+    include_runfiles = True,
+    package_dir = "app"
+)
+
+filegroup(
+    name = "release",
+    srcs = [":app_archive"],
+    target_compatible_with = ["@platforms//os:linux", "@platforms//cpu:aarch64"],
+    tags = ["manual"]
+)
+
+whl_filegroup(
+    name = "certificates",
+    whl = "@certifi//file",
+    pattern = "^(certifi/cacert[.]pem|certifi-[^/]+[.]dist-info/licenses/LICENSE)$"
+)
+
+pkg_tar(
+    name = "certificates_layer",
+    srcs = [":certificates"],
+    strip_prefix = "certificates",
+    package_dir = "etc/ssl",
+    mode = "0444"
+)
+
+oci_image(
+    name = "image",
+    base = "@debian_linux_arm64_v8",
+    tars = ["artifacts/release.tar", ":certificates_layer"],
+    entrypoint = ["/app/app_bin"],
+    env = {"SSL_CERT_FILE": "/etc/ssl/certifi/cacert.pem"},
+    user = "65532:65532",
+    target_compatible_with = ["@platforms//os:linux", "@platforms//cpu:aarch64"],
+    tags = ["manual"]
+)
