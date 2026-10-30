@@ -1,0 +1,11 @@
+[tool.pyrefly]
+project-includes = ["src/**/*.py", "test/**/*.py"]
+project-excludes = ["bazel-*/**", "**/__pycache__/**"]
+python-version = "3.13"
+preset = "strict"
+search-path = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+pythonpath = ["src"]
+addopts = "--strict-config --strict-markers -p no:cacheprovider"

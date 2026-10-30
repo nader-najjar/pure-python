@@ -1,0 +1,40 @@
+module(name = "pure_python", version = "1.0.0")
+
+bazel_dep(name = "rules_python", version = "2.4.2")
+bazel_dep(name = "rules_pyrefly", version = "0.1.0")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_pkg", version = "1.3.0")
+bazel_dep(name = "rules_oci", version = "2.3.0")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.defaults(python_version_file = "//:.python-version")
+python.toolchain(python_version = "3.13.9", configure_coverage_tool = True)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "python_dependencies",
+    python_version = "3.13.9",
+    requirements_lock = "//:requirements_lock.txt"
+)
+use_repo(pip, "python_dependencies")
+
+pyrefly = use_extension("@rules_pyrefly//pyrefly:extensions.bzl", "pyrefly")
+pyrefly.toolchain(version = "1.2.0")
+use_repo(pyrefly, "pyrefly_toolchains")
+register_toolchains("@pyrefly_toolchains//:all")
+
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+http_file(
+    name = "certifi",
+    urls = ["https://files.pythonhosted.org/packages/32/d1/a3652fe2c19134d0d15922177821d863cbd7e842d53a21bbe7e8e3a1b5ac/certifi-2026.10.23-py3-none-any.whl"],
+    sha256 = "e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1"
+)
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.pull(
+    name = "debian",
+    image = "docker.io/library/debian",
+    digest = "sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4",
+    platforms = ["linux/arm64/v8"]
+)
+use_repo(oci, "debian", "debian_linux_arm64_v8")

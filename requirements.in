@@ -1,0 +1,10 @@
+# Runtime
+pydantic==2.14.1
+
+# Test
+pytest==9.1.1
+
+# Development checks
+flake8==7.4.1
+flake8-commas==4.0.0
+pep8-naming==0.15.1

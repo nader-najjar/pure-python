@@ -1,0 +1,12 @@
+common --enable_bzlmod
+
+build --incompatible_default_to_explicit_init_py
+build --@rules_python//python/config_settings:bootstrap_impl=script
+build --aspects=//:custom-rules.bzl%pyrefly_aspect
+build --output_groups=+pyrefly
+
+test --test_output=errors
+test --test_env=PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+
+coverage --instrumentation_filter=^//:(app|entrypoint)$
+coverage --combined_report=lcov
